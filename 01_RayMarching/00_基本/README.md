@@ -9,7 +9,7 @@
   一般的なラスタライズ法 レイトレース法とは違いポリゴンを使用せず[^1]、  
   "距離関数"と呼ばれる数式をもとにしてピクセルシェーダーでオブジェクトをレンダリングするのが特徴。  
   上記特徴によって他のレンダリング法では難しいオブジェクトの変形や合成を得意としていて、  
-  [このような]()ものをコードオンリーで描画できる。(ただし描画負荷はかなり大きい)  
+  [このような](https://www.youtube.com/watch?v=z_xM_jD08OM)ものをコードオンリーで描画できる。(ただし描画負荷はかなり大きい)  
   
 [^1]: ピクセルシェーダーを動作させる必要があるので最低限の板ポリゴンは使用する
 
@@ -201,8 +201,8 @@
   先の項目でようやく球体が描画できましたが真っ白なだけでは流石に物足りません。  
   今度は距離関数から法線を生成してライティングを行いたいと思います。  
   
-  まずは法線の生成から
-
+  まずは法線の生成方法のコードになります。  
+  
   ```glsl
   // 法線生成関数
   vec3 mapNormal(vec3 p) {
@@ -214,30 +214,132 @@
   }
   ```
   
-  これは勾配から法線を生成している。(偏微分 勾配で検索)  
-  次はライティングの計算
+  何してるかわかんないですね。  
+  一言でいうとこのコードは勾配ベクトルを求めることで法線ベクトルを生成しています。  
+  
+  勾配ベクトルとはなにか
+  勾配ベクトルの向きは，今いる点からちょっと動いたときに関数の値が一番大きくなる向きである。  
+
+  まとめ中  
+
+  <!---まとめとく--->
+  http://iquilezles.org/www/articles/normalsSDF/normalsSDF.htm  
+  http://hooktail.sub.jp/vectoranalysis/ScalarFieldGrad/  
+  https://qiita.com/edo_m18/items/3d95c2309d6ad5a6ba55  
+
+  法線を求めることができたので次はライティングを行います。  
+  ライティングは手っ取り早くランバート拡散照明を使用します。  
 
   ```glsl
-  // Lighting Code
+  vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+  vec3 lightColor = vec3(1.0);
+  result = vec4(max(dot(lightDir, mapNormal(rPos)), 0.0) * lightColor, 1.0);
   ```
 
-  特筆すべきことは特にないライティングです。  
-  上記処理を組み合わせたものが下記になります。  
+  特筆すべきことはないライティングです。  
+  上記処理を組み込んだのが以下コードです。図07の見た目になれば成功です。  
 
   ```glsl
-  // Main Code
+  #define MAX_VALUE 1e10
+  #define EPSILON 0.00001
+  #define MARCHING_LOOP 128
+
+  // 球体の距離関数
+  float dfSphere(vec3 p, float r) {
+    return length(p) - r;
+  }
+
+  // 距離関数
+  float map(vec3 p) {
+    float result = MAX_VALUE;
+    result = dfSphere(p, 1.);
+    return result;
+  }
+
+  // 法線生成関数
+  vec3 mapNormal(vec3 p) {
+    return normalize(
+        vec3(
+            map(p + vec3(EPSILON, 0.0,     0.0    )) - map(p + vec3(-EPSILON,  0.0,      0.0    )),
+            map(p + vec3(0.0,     EPSILON, 0.0    )) - map(p + vec3( 0.0,     -EPSILON,  0.0    )),
+            map(p + vec3(0.0,     0.0,     EPSILON)) - map(p + vec3( 0.0,      0.0,     -EPSILON))));
+  }
+
+  // エントリ関数
+  void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 pixelPos = (fragCoord.xy * 2. - iResolution.xy) / min(iResolution.x, iResolution.y); // 原点を画面中心に
+
+    vec3 cameraPos  = vec3( 0.0,  0.0,  5.0);   // カメラ座標
+    vec3 cameraDir  = vec3( 0.0,  0.0, -1.0);   // カメラ向き
+    vec3 cameraUp   = vec3( 0.0,  1.0,  0.0);   // カメラ上方向ベクトル
+    vec3 cameraSide = cross(cameraDir, cameraUp); // 横方向ベクトル
+
+    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+    vec3 lightColor = vec3(1.0);
+
+    // ピクセル座標に対応したレイを生成
+    vec3 ray = normalize(cameraSide * pixelPos.x + cameraUp * pixelPos.y + cameraDir);
+
+    float rDistance = 0.0;  // レイの先端座標(rPos)とオブジェクトの距離
+    float rLen = 0.0;       // カメラ座標からレイの先端座標までの距離
+    vec3 rPos = cameraPos;  // レイの先端座標
+
+    // マーチングループ
+    vec4 result = vec4(0.0);
+    for (int i = 0; i < MARCHING_LOOP; i++) {
+      rPos = cameraPos + ray * rLen;  // レイを伸ばしてレイの先端座標を更新
+      rDistance = map(rPos);  // 距離関数でオブジェクトとの距離を取得
+
+      // 衝突判定(距離が0に限りなく近ければ衝突したと判断)
+      if (abs(rDistance) < EPSILON) {
+        // カラー決定
+        result = vec4(max(dot(lightDir, mapNormal(rPos)), 0.0) * lightColor, 1.0);
+        break;
+      }
+
+      rLen += rDistance;  // レイの長さを更新
+    }
+
+    fragColor = result;
+  }
   ```
+
+  図07  
+  ![図07](pic07.png)  
 
 ### 複数オブジェクトの描画
 
   ライティングした球体を描画できたので今度は複数のオブジェクトを描画してみましょう。  
-  
+  複数オブジェクトの描画は簡単で距離関数の呼び出しを増やすだけですね。  
+  ただ呼び出すだけでなく、距離関数の帰り値を比較してどのオブジェクトが視点座標に近いかを判断する必要があります。
+
   ```glsl
-  // Multi Object Code
+  // 距離比較
+  float dfCompare(float a, float b) {
+    return (a < b) ? a : b;
+  }
+
+  // 距離関数
+  float map(vec3 p) {
+    float result = MAX_VALUE;
+    result = dfCompare(result, dfSphere(p + vec3(-2.5, 0, 0), 1.0));
+    result = dfCompare(result, dfSphere(p + vec3( 0.0, 0, 0), 1.0));
+    result = dfCompare(result, dfSphere(p + vec3( 2.5, 0, 0), 1.0));
+    return result;
+  }
   ```
 
-  ここでコード解説  
-  やりたいこととしては複数オブジェクト描画 オブジェクトの移動
+  行っているのは距離を比較する"dfCompare"の追加と"map"の改造になります。  
+  "dfCompare"は与えられた値を比較して小さいほうを返すだけの単純な作りです。  
+  
+  "map"内の改造は"dfSphere"の呼び出しと"dfCompare"による距離比較を追加しただけですが、  
+  よく見ると"dfSphere"の呼び出しの際にx値に変更をかけているのがわかるかと思います。  
+  これは特定の距離関数呼び出しの際に視点座標にオフセットを加えることで、オブジェクトの位置を動かしている処理になります。  
+
+  上記コードを組み込み図08の見た目になれば成功です。  
+  
+  図08  
+  ![図08](pic08.png)  
 
 ### まとめ  
 
