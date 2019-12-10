@@ -28,5 +28,7 @@ RayMarchingに関して調査してまとめていく予定
   * プリミティブの描画  
   * 法線の定義  
 * 01_Combination  
-* 02_Alteration  
+  * プリミティブの合成  
+* ~~02_Alteration~~
 * 03_Deformation  
+  * プリミティブの変形
