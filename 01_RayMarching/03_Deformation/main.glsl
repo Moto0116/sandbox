@@ -26,18 +26,18 @@ float dfCompare(float a, float b) {
 float map(vec3 p) {
     float result = MAX_VALUE;
 
-    // // でこぼこ球体表示
-    // vec3 sp = p + vec3(-12., 0, 0);
-    // const float n = 0.85;
-    // float d1 = dfSphere(sp, 10.);
-    // float d2 = sin(sp.x * n) * sin(sp.y * n) * sin(sp.z * n);
-    // result = dfCompare(result, (d1 + d2));
-    // // 通常の球体表示
-    // sp = p + vec3(12., 0, 0);
-    // result = dfCompare(result, dfSphere(sp, 10.));
+    // でこぼこ球体表示
+    vec3 sp = p + vec3(-12., -15, 6);
+    const float n = 0.85;
+    float d1 = dfSphere(sp, 10.);
+    float d2 = sin(sp.x * n) * sin(sp.y * n) * sin(sp.z * n);
+    result = dfCompare(result, (d1 + d2));
+    // 通常の球体表示
+    sp = p + vec3(12., -15, 6);
+    result = dfCompare(result, dfSphere(sp, 10.));
 
     // 変形したボックス表示
-    vec3 bp = p + vec3(-10., 0, 0);
+    vec3 bp = p + vec3(-10., 15, 0);
     const float k = 0.6;
     float c = cos(k * bp.y);
     float s = sin(k * bp.y);
@@ -46,7 +46,7 @@ float map(vec3 p) {
     vec3  q = vec3(xz.x, bp.y, xz.y);
     result = dfCompare(result, dfBox(q, vec3(3, 15, 1)) - .3);
     // 通常のボックス表示
-    bp = p + vec3(10., 0, 0);
+    bp = p + vec3(10., 15, 0);
     result = dfCompare(result, dfBox(bp, vec3(3, 15, 1)) - .3);
 
     return result;

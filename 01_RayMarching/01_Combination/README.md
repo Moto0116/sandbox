@@ -176,7 +176,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   この合成処理が一体何の役に立つのかという疑問もあると思いますが、  
   この合成のテクニックによって、[こんなこと](https://www.youtube.com/watch?v=S4VHwFcnq0I)とか[こんなこと](https://www.youtube.com/watch?v=s_UOFo2IULQ&list=PL0EpikNmjs2Dz45-Ru7Rfp8zQ48fI5QOa&index=3)ができます。  
   (本当はサンプル用意できればよかったのですが。。。)  
-  最初のあげたメンガーのスポンジはとても分かりやすい合成の例ですね。  
+  最初のにあげた[メンガーのスポンジ](https://ja.wikipedia.org/wiki/%E3%83%A1%E3%83%B3%E3%82%AC%E3%83%BC%E3%81%AE%E3%82%B9%E3%83%9D%E3%83%B3%E3%82%B8)はとても分かりやすい合成の例ですね。  
   二つ目に挙げた跳ねてるキャラはパーツごと(足とか目とか)にプリミティブを用意しておりそれを合成する形で描画されています。  
   
   本当はプリミティブ同士を合成した繋ぎ目を滑らかにするsmoothというテクニックがあるのですが、  
